@@ -1,2 +1,2 @@
 # CodeReviser
-A python script that iteratively revises a code base
+A python script that iteratively revises a code base.
