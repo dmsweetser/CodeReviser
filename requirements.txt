@@ -1,0 +1,2 @@
+llama-cpp-python
+requests==2.26.0
