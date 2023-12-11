@@ -4,19 +4,29 @@ import subprocess
 import sys
 import datetime
 import logging
+import re
 from llama_cpp import Llama
 
-def archive_prior_results(output_directory, rounds):
+def archive_prior_results(output_directory, current_round):
     # Archive prior results before starting a new round
-    for round_number in range(1, rounds):
+    for round_number in range(1, current_round):
         prior_round_directory = os.path.join(output_directory, f"round_{round_number}")
         archive_directory(prior_round_directory, f"{prior_round_directory}_archive")
 
 def archive_directory(source, destination):
-    # Archive the source directory as a zip file
-    shutil.make_archive(destination, 'zip', source)
-    # Remove the original source directory
-    shutil.rmtree(source)
+    # Check if the source directory exists
+    if not os.path.exists(source):
+        logging.warning(f"Source directory '{source}' does not exist. Skipping archiving.")
+        return
+
+    try:
+        # Archive the source directory as a zip file
+        shutil.make_archive(destination, 'zip', source)
+        # Remove the original source directory
+        shutil.rmtree(source)
+    except Exception as e:
+        logging.error(f"Error archiving directory {source}: {str(e)}")
+
 
 def setup_logging():
     # Configure logging to log to a timestamped file
@@ -37,7 +47,7 @@ def generate_code_revision(original_code, model_name):
         "no_mmap": False,
         "mlock": True,
         "no_mul_mat_q": False,
-        "n_gpu_layers": 0,
+        "n_gpu_layers": 35,
         "tensor_split": "",
         "n_ctx": 16384,
         "compress_pos_emb": 1,
@@ -72,7 +82,7 @@ def generate_code_revision(original_code, model_name):
 def process_file(input_path, output_path, model_name):
     # Process a file by generating a code revision and extracting code blocks
     logging.info(f"Processing file: {input_path}")
-    
+
     try:
         with open(input_path, 'r') as file:
             original_code = file.read()
@@ -80,7 +90,23 @@ def process_file(input_path, output_path, model_name):
         # Convert original_code to a string
         original_code = str(original_code)
 
-        revised_code = generate_code_revision(original_code, model_name)
+        revised_response = generate_code_revision(original_code, model_name)
+
+        # Extract the revised code from the response inside the Markdown code block using regular expression
+        pattern = re.compile(r'```.*?```', re.DOTALL)
+        match = pattern.search(revised_response['choices'][0]['message']['content'])
+
+        if match:
+            revised_code = match.group(0)[3:-3].strip()  # Remove the triple backticks and strip leading/trailing whitespaces
+
+            # Remove the first line from the revised_code
+            revised_code_lines = revised_code.split('\n', 1)
+            if len(revised_code_lines) > 1:
+                revised_code = revised_code_lines[1]
+
+        else:
+            # If no match is found, use the entire content
+            revised_code = revised_response['choices'][0]['message']['content'].strip()
 
         # Write the revised code to the output file
         with open(output_path, 'w') as file:
@@ -99,10 +125,10 @@ def main(target_directory, output_directory, rounds, model_name):
     if not os.path.exists(output_directory):
         os.makedirs(output_directory)
 
-    for round_number in range(1, rounds + 1):
+    for round_number in range(1, rounds):
         round_output_directory = os.path.join(output_directory, f"round_{round_number}")
         logging.info(f"Round {round_number}: Creating directory {round_output_directory}")
-        
+
         # Archive prior results
         archive_prior_results(output_directory, round_number)
 
@@ -121,6 +147,6 @@ if __name__ == "__main__":
     setup_logging()
     target_directory = "Target"
     output_directory = "Output"
-    rounds = 3
+    rounds = 5
     model_name = "openhermes-2.5-mistral-7b-16k.Q2_K.gguf"
-    main(target_directory, output_directory, rounds, model_name)
+    main(target_directory, output_directory, rounds + 1, model_name)
