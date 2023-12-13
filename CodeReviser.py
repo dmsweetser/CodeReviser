@@ -1,62 +1,11 @@
 import os
 import shutil
+import subprocess
+import sys
 import datetime
 import logging
 import re
 from llama_cpp import Llama
-
-def split_methods(file_path, output_directory, max_method_size):
-    try:
-        with open(file_path, 'r') as file:
-            original_code = file.read()
-
-        # Check if the file is a C# file
-        if file_path.lower().endswith('.cs'):
-            # Split methods based on an arbitrary maximum size
-            methods = re.split(r'\b(?:public|private|protected|internal|static|void)\b', original_code)
-            method_files = []
-
-            for i, method in enumerate(methods):
-                if len(method) > max_method_size:
-                    # Create a new file for the large method with an index in the filename
-                    method_filename = f"{os.path.splitext(os.path.basename(file_path))[0]}_method_{i + 1}.cs"
-                    method_filepath = os.path.join(output_directory, method_filename)
-
-                    with open(method_filepath, 'w') as method_file:
-                        method_file.write(method)
-
-                    method_files.append(method_filepath)
-
-            return method_files
-
-        else:
-            # If not a C# file, return the original file
-            return [file_path]
-
-    except Exception as e:
-        logging.error(f"Error splitting methods in file {file_path}: {str(e)}")
-        return [file_path]
-
-def combine_files(output_directory, combined_filename, method_files):
-    try:
-        # Sort the method files based on the index in the filename
-        method_files.sort(key=lambda x: int(re.search(r'_method_(\d+)\.cs', x).group(1)))
-
-        # Combine the split method files into a single file
-        combined_filepath = os.path.join(output_directory, combined_filename)
-
-        with open(combined_filepath, 'w') as combined_file:
-            for method_file in method_files:
-                with open(method_file, 'r') as method_content:
-                    combined_file.write(method_content.read())
-                # Remove the individual method file after combining
-                os.remove(method_file)
-
-        return combined_filepath
-
-    except Exception as e:
-        logging.error(f"Error combining method files: {str(e)}")
-        return None
 
 def archive_prior_results(output_directory, current_round):
     # Archive prior results before starting a new round
@@ -130,20 +79,12 @@ def generate_code_revision(original_code, model_name):
         logging.error(f"Error generating code revision: {str(e)}")
         return original_code  # Return original code in case of an error
 
-def process_file(input_path, output_path, output_directory, model_name, max_method_size):
-    # Process a file by splitting methods, generating a code revision, and then combining methods
+def process_file(input_path, output_path, model_name):
+    # Process a file by generating a code revision and extracting code blocks
     logging.info(f"Processing file: {input_path}")
 
     try:
-        # Split and revise methods if the file is a C# file
-        method_files = split_methods(input_path, output_directory, max_method_size)
-
-        # Combine the split method files into a single file
-        combined_filename = f"{os.path.splitext(os.path.basename(output_path))[0]}_combined.cs"
-        combined_filepath = combine_files(output_directory, combined_filename, method_files)
-
-        # Read the combined file for generating code revision
-        with open(combined_filepath, 'r') as file:
+        with open(input_path, 'r') as file:
             original_code = file.read()
 
         # Convert original_code to a string
@@ -171,16 +112,11 @@ def process_file(input_path, output_path, output_directory, model_name, max_meth
         with open(output_path, 'w') as file:
             file.write(revised_code)
 
-        return combined_filepath
-
     except Exception as e:
         logging.error(f"Error processing file {input_path}: {str(e)}")
         shutil.copyfile(input_path, output_path)  # Copy the original file in case of an error
-        return None
 
-# Modify the main function
-
-def main(target_directory, output_directory, rounds, model_name, max_method_size):
+def main(target_directory, output_directory, rounds, model_name):
     # Main function to process files in multiple rounds
     timestamp = datetime.datetime.now().strftime("%Y%m%d%H%M%S")
     logging.info("Script execution started.")
@@ -189,7 +125,7 @@ def main(target_directory, output_directory, rounds, model_name, max_method_size
     if not os.path.exists(output_directory):
         os.makedirs(output_directory)
 
-    for round_number in range(1, rounds + 1):
+    for round_number in range(1, rounds):
         round_output_directory = os.path.join(output_directory, f"round_{round_number}")
         logging.info(f"Round {round_number}: Creating directory {round_output_directory}")
 
@@ -202,8 +138,8 @@ def main(target_directory, output_directory, rounds, model_name, max_method_size
         for root, dirs, files in os.walk(round_output_directory):
             for file in files:
                 file_path = os.path.join(root, file)
-                if file.lower().endswith(('.py', '.java', '.cpp', '.cs', '.js', '.cshtml')):
-                    process_file(file_path, file_path, round_output_directory, model_name, max_method_size)
+                if file.lower().endswith(('.py', '.java', '.cpp', '.cs')):
+                    process_file(file_path, file_path, model_name)
 
     logging.info("Script execution completed.")
 
@@ -213,5 +149,4 @@ if __name__ == "__main__":
     output_directory = "Output"
     rounds = 5
     model_name = "openhermes-2.5-mistral-7b-16k.Q2_K.gguf"
-    max_method_size = 4096
-    main(target_directory, output_directory, rounds + 1, model_name, max_method_size)
+    main(target_directory, output_directory, rounds + 1, model_name)
