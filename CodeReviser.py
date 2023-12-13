@@ -47,7 +47,7 @@ def generate_code_revision(original_code, model_name):
         "no_mmap": False,
         "mlock": True,
         "no_mul_mat_q": False,
-        "n_gpu_layers": 35,
+        "n_gpu_layers": 0,
         "tensor_split": "",
         "n_ctx": 16384,
         "compress_pos_emb": 1,
@@ -66,7 +66,7 @@ def generate_code_revision(original_code, model_name):
     try:
         llama = Llama(model_name, **llama_params)
 
-        messages = [{"role": "system", "content": "Please revise the following code and respond with only the revised code in markdown. If pseudocode is provided, generate valid code based on requested programming language to complete the necessary task. Focus on performance, usability, and general code quality, and please only respond with the revised code in markdown: " + original_code}]
+        messages = [{"role": "system", "content": "Please revise the following code and respond with only the revised code in markdown. If pseudocode is provided, generate valid code based on requested programming language to complete the necessary task. For any changes made, please include an inline comment explaining the rationale. Focus on performance, usability, and general code quality, and please only respond with the revised code in markdown: " + original_code}]
         response = llama.create_chat_completion(messages=messages)
 
         # Log the question and response
