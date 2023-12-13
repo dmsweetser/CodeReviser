@@ -18,7 +18,7 @@ def split_methods(file_path, output_directory, max_method_size):
 
             for i, method in enumerate(methods):
                 if len(method) > max_method_size:
-                    # Create a new file for the large method
+                    # Create a new file for the large method with an index in the filename
                     method_filename = f"{os.path.splitext(os.path.basename(file_path))[0]}_method_{i + 1}.cs"
                     method_filepath = os.path.join(output_directory, method_filename)
 
@@ -39,6 +39,9 @@ def split_methods(file_path, output_directory, max_method_size):
 
 def combine_files(output_directory, combined_filename, method_files):
     try:
+        # Sort the method files based on the index in the filename
+        method_files.sort(key=lambda x: int(re.search(r'_method_(\d+)\.cs', x).group(1)))
+
         # Combine the split method files into a single file
         combined_filepath = os.path.join(output_directory, combined_filename)
 
