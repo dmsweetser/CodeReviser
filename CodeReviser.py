@@ -6,6 +6,7 @@ import datetime
 import logging
 import re
 from llama_cpp import Llama
+import time
 
 def archive_prior_results(output_directory, current_round):
     # Archive prior results before starting a new round
@@ -27,13 +28,12 @@ def archive_directory(source, destination):
     except Exception as e:
         logging.error(f"Error archiving directory {source}: {str(e)}")
 
-
 def setup_logging():
     # Configure logging to log to a timestamped file
     log_filename = f"script_log_{datetime.datetime.now().strftime('%Y%m%d%H%M%S')}.txt"
     logging.basicConfig(filename=log_filename, level=logging.DEBUG, format='%(asctime)s - %(levelname)s - %(message)s')
 
-def generate_code_revision(original_code, model_name):
+def generate_code_revision(original_code, model_name, temperature):
     # Generate code revision using llama_cpp library
     logging.info("Generating code revision.")
 
@@ -55,7 +55,7 @@ def generate_code_revision(original_code, model_name):
         "rope_freq_base": 0,
         "numa": False,
         "model": model_name,
-        "temperature": 0.87,
+        "temperature": temperature,
         "top_p": 0.99,
         "top_k": 85,
         "repetition_penalty": 1.01,
@@ -66,7 +66,7 @@ def generate_code_revision(original_code, model_name):
     try:
         llama = Llama(model_name, **llama_params)
 
-        messages = [{"role": "system", "content": "Please revise the following code and respond with only the revised code in markdown. If pseudocode is provided, generate valid code based on requested programming language to complete the necessary task. For any changes made, please include an inline comment explaining the rationale. Focus on performance, usability, and general code quality, and please only respond with the revised code in markdown: " + original_code}]
+        messages = [{"role": "system", "content": "Can you make this code better? If you see placeholders or pseudocode, please replace them with actual implementations. Please generate revisions in the same code language as the original. Please only respond with the revised code in markdown: " + original_code}]
         response = llama.create_chat_completion(messages=messages)
 
         # Log the question and response
@@ -79,7 +79,7 @@ def generate_code_revision(original_code, model_name):
         logging.error(f"Error generating code revision: {str(e)}")
         return original_code  # Return original code in case of an error
 
-def process_file(input_path, output_path, model_name):
+def process_file(input_path, output_path, model_name, temperature):
     # Process a file by generating a code revision and extracting code blocks
     logging.info(f"Processing file: {input_path}")
 
@@ -90,7 +90,7 @@ def process_file(input_path, output_path, model_name):
         # Convert original_code to a string
         original_code = str(original_code)
 
-        revised_response = generate_code_revision(original_code, model_name)
+        revised_response = generate_code_revision(original_code, model_name, temperature)
 
         # Extract the revised code from the response inside the Markdown code block using regular expression
         pattern = re.compile(r'```.*?```', re.DOTALL)
@@ -116,7 +116,8 @@ def process_file(input_path, output_path, model_name):
         logging.error(f"Error processing file {input_path}: {str(e)}")
         shutil.copyfile(input_path, output_path)  # Copy the original file in case of an error
 
-def main(target_directory, output_directory, rounds, model_name):
+def main(target_directory, output_directory, rounds, model_name, temperatures):
+
     # Main function to process files in multiple rounds
     timestamp = datetime.datetime.now().strftime("%Y%m%d%H%M%S")
     logging.info("Script execution started.")
@@ -129,24 +130,53 @@ def main(target_directory, output_directory, rounds, model_name):
         round_output_directory = os.path.join(output_directory, f"round_{round_number}")
         logging.info(f"Round {round_number}: Creating directory {round_output_directory}")
 
+        if round_number == 1:
+            # For the first round, use the original target directory
+            shutil.copytree(target_directory, round_output_directory, symlinks=False, ignore=None)
+        else:
+            # For subsequent rounds, copy the results from the previous round
+            prior_round_directory = os.path.join(output_directory, f"round_{round_number - 1}")
+            shutil.copytree(prior_round_directory, round_output_directory, symlinks=False, ignore=None)
+
         # Archive prior results
         archive_prior_results(output_directory, round_number)
 
-        # Copy the original target directory to the round's output directory
-        shutil.copytree(target_directory, round_output_directory, symlinks=False, ignore=None)
+        # Use the specified temperature for this round
+        temperature = temperatures[round_number - 1]
 
         for root, dirs, files in os.walk(round_output_directory):
             for file in files:
                 file_path = os.path.join(root, file)
                 if file.lower().endswith(('.py', '.java', '.cpp', '.cs')):
-                    process_file(file_path, file_path, model_name)
+                    process_file(file_path, file_path, model_name, temperature)
 
     logging.info("Script execution completed.")
 
 if __name__ == "__main__":
+
+    start_time = time.time()
+
+    file_url = "https://huggingface.co/TheBloke/Mistral-7B-Instruct-v0.2-GGUF/blob/main/mistral-7b-instruct-v0.2.Q8_0.gguf"
+    file_name = "mistral-7b-instruct-v0.2.Q8_0.gguf"
+
+    # Check if the file already exists
+    if not os.path.exists(file_name):
+        # If not, download the file
+        response = requests.get(file_url)
+        with open(file_name, "wb") as file:
+            file.write(response.content)
+        print(f"{file_name} downloaded successfully.")
+    else:
+        print(f"{file_name} already exists in the current directory.")
+
     setup_logging()
-    target_directory = "Target"
+    source_directory = "Source"
     output_directory = "Output"
     rounds = 5
-    model_name = "openhermes-2.5-mistral-7b-16k.Q2_K.gguf"
-    main(target_directory, output_directory, rounds + 1, model_name)
+    model_name = file_name
+    temperatures = [0.87, 1.0, 0.87, 1.0, 0.87]  # Specify temperatures for each round
+    main(source_directory, output_directory, rounds + 1, model_name, temperatures)
+    
+    end_time = time.time()
+    total_execution_time = end_time - start_time
+    logging.info(f"Total execution time: {total_execution_time} seconds.")
