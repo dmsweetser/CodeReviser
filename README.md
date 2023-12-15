@@ -1,7 +1,7 @@
 # Code Reviser
 _Built in collaboration with generative AI_
 
-This repository contains Python code for performing code revision using the Llama.cpp tool. The tool leverages a specific model named "openhermes-2.5-mistral-7b-16k.Q8_0.gguf" for generating revised code. The process involves multiple rounds of revision, and the final output is stored in the "Output" directory.
+This repository contains Python code for performing code revision using the Llama.cpp tool. The process involves multiple rounds of revision, and the final output is stored in the "Output" directory.
 
 ## Prerequisites
 
