@@ -129,8 +129,8 @@ if __name__ == "__main__":
 
     start_time = time.time()
 
-    file_url = "https://huggingface.co/TheBloke/Yarn-Mistral-7B-128k-GGUF/blob/main/yarn-mistral-7b-128k.Q2_K.gguf"
-    file_name = "yarn-mistral-7b-128k.Q2_K.gguf"
+    file_url = "https://huggingface.co/TheBloke/Mistral-7B-Instruct-v0.2-GGUF/blob/main/mistral-7b-instruct-v0.2.Q2_K.gguf"
+    file_name = "mistral-7b-instruct-v0.2.Q2_K.gguf"
 
     # Check if the file already exists
     if not os.path.exists(file_name):
@@ -147,7 +147,7 @@ if __name__ == "__main__":
     output_directory = "Output"
     rounds = 5
     model_name = file_name
-    temperatures = [1.0, 1.0, 1.0, 0.87, 0.87]  # Specify temperatures for each round
+    temperatures = [1.0, 1.0, 0.87, 1.0, 0.87]  # Specify temperatures for each round
     
     # Define llama.cpp parameters
     llama_params = {
