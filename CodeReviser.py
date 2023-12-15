@@ -33,41 +33,14 @@ def setup_logging():
     log_filename = f"script_log_{datetime.datetime.now().strftime('%Y%m%d%H%M%S')}.txt"
     logging.basicConfig(filename=log_filename, level=logging.DEBUG, format='%(asctime)s - %(levelname)s - %(message)s')
 
-def generate_code_revision(original_code, model_name, temperature):
+def generate_code_revision(original_code, temperature):
     # Generate code revision using llama_cpp library
     logging.info("Generating code revision.")
-
-    # Define llama.cpp parameters
-    llama_params = {
-        "loader": "llama.cpp",
-        "cpu": False,
-        "threads": 0,
-        "threads_batch": 0,
-        "n_batch": 512,
-        "no_mmap": False,
-        "mlock": True,
-        "no_mul_mat_q": False,
-        "n_gpu_layers": 0,
-        "tensor_split": "",
-        "n_ctx": 16384,
-        "compress_pos_emb": 1,
-        "alpha_value": 1,
-        "rope_freq_base": 0,
-        "numa": False,
-        "model": model_name,
-        "temperature": temperature,
-        "top_p": 0.99,
-        "top_k": 85,
-        "repetition_penalty": 1.01,
-        "typical_p": 0.68,
-        "tfs": 0.68
-    }
     
     try:
-        llama = Llama(model_name, **llama_params)
 
         messages = [{"role": "system", "content": "Can you make this code better? If you see placeholders or pseudocode, please replace them with actual implementations. Please generate revisions in the same code language as the original. Please only respond with the revised code in markdown: " + original_code}]
-        response = llama.create_chat_completion(messages=messages)
+        response = llama.create_chat_completion(messages=messages, temperature=temperature)
 
         # Log the question and response
         logging.info(f"Question: {messages[0]['content']}")
@@ -79,7 +52,7 @@ def generate_code_revision(original_code, model_name, temperature):
         logging.error(f"Error generating code revision: {str(e)}")
         return original_code  # Return original code in case of an error
 
-def process_file(input_path, output_path, model_name, temperature):
+def process_file(input_path, output_path, temperature):
     # Process a file by generating a code revision and extracting code blocks
     logging.info(f"Processing file: {input_path}")
 
@@ -90,7 +63,7 @@ def process_file(input_path, output_path, model_name, temperature):
         # Convert original_code to a string
         original_code = str(original_code)
 
-        revised_response = generate_code_revision(original_code, model_name, temperature)
+        revised_response = generate_code_revision(original_code, temperature)
 
         # Extract the revised code from the response inside the Markdown code block using regular expression
         pattern = re.compile(r'```.*?```', re.DOTALL)
@@ -116,7 +89,7 @@ def process_file(input_path, output_path, model_name, temperature):
         logging.error(f"Error processing file {input_path}: {str(e)}")
         shutil.copyfile(input_path, output_path)  # Copy the original file in case of an error
 
-def main(target_directory, output_directory, rounds, model_name, temperatures):
+def main(target_directory, output_directory, rounds, temperatures):
 
     # Main function to process files in multiple rounds
     timestamp = datetime.datetime.now().strftime("%Y%m%d%H%M%S")
@@ -147,8 +120,8 @@ def main(target_directory, output_directory, rounds, model_name, temperatures):
         for root, dirs, files in os.walk(round_output_directory):
             for file in files:
                 file_path = os.path.join(root, file)
-                if file.lower().endswith(('.py', '.java', '.cpp', '.cs')):
-                    process_file(file_path, file_path, model_name, temperature)
+                if file.lower().endswith(('.py', '.java', '.cpp', '.cs', '.cshtml', '.js')):
+                    process_file(file_path, file_path, temperature)
 
     logging.info("Script execution completed.")
 
@@ -156,8 +129,8 @@ if __name__ == "__main__":
 
     start_time = time.time()
 
-    file_url = "https://huggingface.co/TheBloke/Mistral-7B-Instruct-v0.2-GGUF/blob/main/mistral-7b-instruct-v0.2.Q2_K.gguf"
-    file_name = "mistral-7b-instruct-v0.2.Q2_K.gguf"
+    file_url = "https://huggingface.co/TheBloke/Yarn-Mistral-7B-128k-GGUF/blob/main/yarn-mistral-7b-128k.Q2_K.gguf"
+    file_name = "yarn-mistral-7b-128k.Q2_K.gguf"
 
     # Check if the file already exists
     if not os.path.exists(file_name):
@@ -174,9 +147,38 @@ if __name__ == "__main__":
     output_directory = "Output"
     rounds = 5
     model_name = file_name
-    temperatures = [0.87, 1.0, 0.87, 1.0, 0.87]  # Specify temperatures for each round
-    main(source_directory, output_directory, rounds + 1, model_name, temperatures)
+    temperatures = [1.0, 1.0, 1.0, 0.87, 0.87]  # Specify temperatures for each round
     
+    # Define llama.cpp parameters
+    llama_params = {
+        "loader": "llama.cpp",
+        "cpu": False,
+        "threads": 0,
+        "threads_batch": 0,
+        "n_batch": 512,
+        "no_mmap": False,
+        "mlock": True,
+        "no_mul_mat_q": False,
+        "n_gpu_layers": 0,
+        "tensor_split": "",
+        "n_ctx": 16384,
+        "compress_pos_emb": 1,
+        "alpha_value": 1,
+        "rope_freq_base": 0,
+        "numa": False,
+        "model": model_name,
+        "temperature": 1.0,
+        "top_p": 0.99,
+        "top_k": 85,
+        "repetition_penalty": 1.01,
+        "typical_p": 0.68,
+        "tfs": 0.68
+    }
+    
+    llama = Llama(model_name, **llama_params)
+    
+    main(source_directory, output_directory, rounds + 1, temperatures)
+        
     end_time = time.time()
     total_execution_time = end_time - start_time
     logging.info(f"Total execution time: {total_execution_time} seconds.")
