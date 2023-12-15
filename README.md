@@ -41,7 +41,7 @@ You can customize the revision process by modifying the parameters in the `llama
 
 ## Additional Notes
 
-- The code supports files with the extensions `.py`, `.java`, `.cpp`, and `.cs`. Make sure your target code files have one of these extensions.
+- The code supports files with the following extensions: '.py', '.java', '.cpp', '.cs', '.cshtml', '.js'. Make sure your target code files have one of these extensions, or modify the script to add any extensions that are missing that you need.
 
 - The generated code from Llama.cpp is extracted from markdown code blocks within the revised code. The `process_file()` function handles this extraction.
 
