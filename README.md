@@ -9,7 +9,9 @@ Make sure you have the following prerequisites installed before running the code
 
 - Llama.cpp: Follow the installation instructions [here](llamacpp/llama/INSTALL.md) to install Llama.cpp.
 - Python: Ensure you have Python 3.12 installed on your system.
-- Microsoft C++ Build Tools: Ensure you have the proper build tools available for C/C++ (see discussion here: https://github.com/imartinez/privateGPT/issues/18)
+- Microsoft C++ Build Tools: Ensure you have the proper build tools available for C/C++ (see discussion here: https://github.com/imartinez/privateGPT/issues/18). It may involve the following:
+![image](https://github.com/dmsweetser/CodeReviser/assets/37463869/4679e46d-640b-4e7e-93b6-d4d5aec7dc80)
+
 
 ## Usage
 
