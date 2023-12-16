@@ -7,7 +7,6 @@ import logging
 import re
 from llama_cpp import Llama
 import time
-import requests
 
 max_tokens = 16384
 file_extensions = ('.py', '.java', '.cpp', '.cs', '.cshtml', '.js')
@@ -155,10 +154,6 @@ def process_file(input_path, output_path, output_directory, round_number):
         # Write the revised code to the output file
         with open(output_path, 'w') as file:
             file.write(revised_code)
-
-        # Save file revisions with the original filename
-        save_file_revisions([{"filename": os.path.basename(input_path), "content": revised_code}],
-                            output_directory, round_number, os.path.basename(input_path))
 
     except Exception as e:
         logging.error(f"Error processing file {input_path}: {str(e)}")
