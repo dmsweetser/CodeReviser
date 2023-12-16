@@ -45,7 +45,7 @@ def generate_code_revision(original_code, output_directory,):
     logging.info("Generating code revision.")
     
     try:
-        messages = [{"role": "system", "content": "Enhance the provided code by replacing placeholders or pseudocode with actual implementations. Utilize the same programming language as the original. Generate properly-escaped comments, including for potential new features. Present the revised code solely in markdown format. Here is the provided code: " + original_code}]
+        messages = [{"role": "system", "content": "Can you make this code better? If you see placeholders or pseudocode, please replace them with actual implementations. Please include properly-escaped comments wherever possible, including comments for potential new features. Please generate revisions in the same code language as the original. Please only respond with the revised code in markdown: " + original_code}]
         response = llama.create_chat_completion(messages=messages, temperature=1.0)
 
         logging.info(f"Question: {messages[0]['content']}")
