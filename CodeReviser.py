@@ -11,7 +11,6 @@ import time
 max_tokens = 16384
 file_extensions = ('.py', '.java', '.cpp', '.cs', '.cshtml', '.js')
 
-
 def archive_prior_results(output_directory, current_round):
     # Archive prior results before starting a new round
     for round_number in range(1, current_round):
@@ -45,7 +44,7 @@ def generate_code_revision(original_code, output_directory,):
     logging.info("Generating code revision.")
     
     try:
-        messages = [{"role": "system", "content": "Can you make this code better? If you see placeholders or pseudocode, please replace them with actual implementations. Please include properly-escaped comments wherever possible, including comments for potential new features. Please generate revisions in the same code language as the original. Please only respond with the revised code in markdown: " + original_code}]
+        messages = [{"role": "system", "content": "Revise and enhance the provided code, addressing issues, optimizing, and expanding features; implement pseudocode, comments, and placeholders; suggest additional features or improvements in comments or pseudocode for iterative development in subsequent rounds. Include a properly-commented summary of the overall intent of the code that mentions every intended feature. Use the same programming language as the provided code. Here is the provided code: " + original_code}]
         response = llama.create_chat_completion(messages=messages, temperature=1.0)
 
         logging.info(f"Question: {messages[0]['content']}")
@@ -243,7 +242,7 @@ if __name__ == "__main__":
     }
     
     llama = Llama(model_name, **llama_params)
-    
+
     main(source_directory, output_directory, rounds + 1)
         
     end_time = time.time()
