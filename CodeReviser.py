@@ -38,13 +38,13 @@ def setup_logging():
 
 def generate_code_revision(original_code, output_directory,):
     # Check if original_code is more than 40% of max_tokens
-    if len(original_code) > 0.7 * max_tokens:
+    if len(original_code) > 0.5 * max_tokens:
         return generate_file_revisions(original_code, output_directory)
 
     logging.info("Generating code revision.")
     
     try:
-        messages = [{"role": "system", "content": "Revise and enhance the provided code, addressing issues, optimizing, and expanding features; implement pseudocode, comments, and placeholders; suggest additional features or improvements in comments or pseudocode for iterative development in subsequent rounds. Include a properly-commented summary of the overall intent of the code that mentions every intended feature. Use the same programming language as the provided code. Here is the provided code: " + original_code}]
+        messages = [{"role": "system", "content": "Revise and enhance the provided code, addressing issues, optimizing, and expanding features; implement pseudocode, comments, and placeholders; suggest additional features or improvements in comments or pseudocode for iterative development in subsequent rounds. YOU MUST ALWAYS generate a properly-commented summary of the overall intent of the code that mentions every intended feature. Use the same programming language as the provided code. Here is the provided code: " + original_code}]
         response = llama.create_chat_completion(messages=messages, temperature=1.0)
 
         logging.info(f"Question: {messages[0]['content']}")
@@ -61,7 +61,7 @@ def generate_file_revisions(original_code, output_directory):
     logging.info("Generating file revisions.")
 
     try:
-        messages = [{"role": "system", "content": "Refactor the provided code to enable separation into individual files. Each refactored part should be enclosed in markdown, representing an individual file. Maintain the original programming language. For each file, include appropriately escaped comments detailing the file's purpose, relevant features, and any shared interfaces. Please use the given code for refactoring: " + original_code}]
+        messages = [{"role": "system", "content": "Refactor the provided code to enable separation into individual files. Each refactored part should be enclosed in markdown, representing an individual file. YOU MUST ALWAYS generate a properly-commented summary of the overall intent of the code that mentions every intended feature, as well as how the refactored individual file contributes to that goal. Use the same programming language as the provided code. Here is the provided code: " + original_code}]
         response = llama.create_chat_completion(messages=messages, temperature=1.0)
 
         logging.info(f"Question: {messages[0]['content']}")
@@ -195,8 +195,8 @@ if __name__ == "__main__":
 
     start_time = time.time()
 
-    file_url = "https://huggingface.co/TheBloke/Mistral-7B-Instruct-v0.2-GGUF/blob/main/mistral-7b-instruct-v0.2.Q2_K.gguf"
-    file_name = "mistral-7b-instruct-v0.2.Q2_K.gguf"
+    file_url = "https://huggingface.co/TheBloke/Mistral-7B-Instruct-v0.2-GGUF/blob/main/mistral-7b-instruct-v0.2.Q5_K_S.gguf"
+    file_name = "mistral-7b-instruct-v0.2.Q5_K_S.gguf"
 
     # Check if the file already exists
     if not os.path.exists(file_name):
