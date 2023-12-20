@@ -150,8 +150,8 @@ if __name__ == "__main__":
         print(f"{file_name} already exists in the current directory.")
 
     setup_logging()
-    source_directory = "Source"
-    output_directory = "Output"
+    source_directory = "Code\\Source"
+    output_directory = "Code\\Output"
     rounds = 100
     model_name = file_name
         
