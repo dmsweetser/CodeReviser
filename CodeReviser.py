@@ -4,11 +4,9 @@ import datetime
 import logging
 from llama_cpp import Llama
 import time
-import requests
 
 max_tokens = 32768
 file_extensions = ('.py', '.java', '.cpp', '.cs', '.cshtml', '.js', '.html')
-
 
 def archive_prior_results(output_directory, current_round):
     # Archive prior results before starting a new round
