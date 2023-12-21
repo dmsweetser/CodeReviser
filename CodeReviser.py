@@ -68,8 +68,8 @@ def generate_code_revision(original_code):
         
         llama = Llama(model_name, **llama_params)
 
-        response = llama(
-            "Enhance the provided code by replacing placeholders or pseudocode with actual implementations. Utilize the same programming language as the original. Generate as many properly-escaped comments as you can, including adding at least five TODO items for potential new features. Your revised code should always be longer than the provided code. Present the revised code solely in markdown format. Here is the provided code: " + original_code)
+        messages = [{"role": "system", "content": "Revise and enhance the provided code, addressing issues, optimizing, and expanding features; implement pseudocode, comments, and placeholders; suggest additional features or improvements in comments or pseudocode for iterative development in subsequent rounds. Include a properly-commented summary of the overall intent of the code that mentions every intended feature. Use the same programming language as the provided code. Try to also include at least five TODO items for potential new features to add. Here is the provided code: ```" + original_code + "```"}]
+        response = llama.create_chat_completion(messages=messages)
 
         logging.info(f"Response: {response}")
 
@@ -84,12 +84,15 @@ def process_file(input_path, output_path):
 
     try:
 
-        with open(input_path, 'r') as file:
+        with open(input_path, 'r', encoding='utf-8') as file:
             original_code = file.read()
+
+        # Remove non-ASCII characters from the original code - UNTESTED
+        original_code = ''.join(char for char in original_code if ord(char) < 128)
 
         response = generate_code_revision(str(original_code))
 
-        revised_code = response['choices'][0]['text'].strip()
+        revised_code = response['choices'][0]['message']['content'].strip()
 
         # Write the revised code to the output file
         with open(output_path, 'w') as file:
