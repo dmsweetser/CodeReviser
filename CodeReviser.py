@@ -87,12 +87,16 @@ def process_file(input_path, output_path):
         with open(input_path, 'r', encoding='utf-8') as file:
             original_code = file.read()
 
-        # Remove non-ASCII characters from the original code - UNTESTED
+        # Remove non-ASCII characters from the original code
         original_code = ''.join(char for char in original_code if ord(char) < 128)
 
         response = generate_code_revision(str(original_code))
 
         revised_code = response['choices'][0]['message']['content'].strip()
+
+        # If the round was a dud and didn't really revise the code, retain the original
+        if len(revised_code) < len(original_code) * .8:
+            revised_code = original_code
 
         # Write the revised code to the output file
         with open(output_path, 'w') as file:
